@@ -1,0 +1,181 @@
+# Dokploy Production Docker Compose for Raba Pay Platform
+# Self-hosted PaaS deployment without Nginx (Traefik reverse proxy managed by Dokploy)
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rabapay_db}
+      POSTGRES_USER: ${POSTGRES_USER:-rabapay_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rabapay_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rabapay_user} -d ${POSTGRES_DB:-rabapay_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
+    expose:
+      - "8000"
+    volumes:
+      - media_data:/app/media
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DJANGO_DEBUG=False
+      - POSTGRES_HOST=db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - RUN_MIGRATIONS=true
+      - SEED_DATA=false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.rabapay-api.rule=Host(`${API_DOMAIN:-api.rabapay.xyz}`)"
+      - "traefik.http.routers.rabapay-api.entrypoints=websecure"
+      - "traefik.http.routers.rabapay-api.tls=true"
+      - "traefik.http.routers.rabapay-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.rabapay-api.loadbalancer.server.port=8000"
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A config worker -l info --concurrency=4
+    volumes:
+      - media_data:/app/media
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - POSTGRES_HOST=db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - RUN_MIGRATIONS=false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A config beat -l info
+    volumes:
+      - media_data:/app/media
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - POSTGRES_HOST=db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - RUN_MIGRATIONS=false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+
+  soroban_indexer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: python manage.py run_soroban_event_listener
+    volumes:
+      - media_data:/app/media
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - POSTGRES_HOST=db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - RUN_MIGRATIONS=false
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.rabapay.xyz/api}
+        VITE_FRONTEND_URL: ${VITE_FRONTEND_URL:-https://rabapay.xyz}
+        VITE_VPS_IP: ${VITE_VPS_IP:-}
+    restart: unless-stopped
+    expose:
+      - "3000"
+    networks:
+      - internal
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.rabapay-frontend.rule=Host(`${FRONTEND_DOMAIN:-rabapay.xyz}`) || Host(`www.${FRONTEND_DOMAIN:-rabapay.xyz}`)"
+      - "traefik.http.routers.rabapay-frontend.entrypoints=websecure"
+      - "traefik.http.routers.rabapay-frontend.tls=true"
+      - "traefik.http.routers.rabapay-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.rabapay-frontend.loadbalancer.server.port=3000"
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:
+
+networks:
+  dokploy-network:
+    external: true
+  internal:
+    driver: bridge

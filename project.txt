@@ -1,0 +1,66 @@
+Raba Pay - Project Brief 
+Overview
+Raba Pay is a shared expense and bill-splitting platform that allows friends, roommates, colleagues, and groups to divide bills and settle their shares using simulated USDC on Stellar Testnet.
+It reduces manual calculations, payment reminders, and uncertainty about who has paid.
+Sprint Goal
+Build a working MVP where users can create shared bills, invite participants, split expenses equally or by custom amounts, and verify individual payments using Stellar.
+Core Features
+1. User & Group Management
+User registration.
+Create expense groups.
+Add or invite participants.
+View group expenses and payment history.
+2. Shared Bill Creation
+Create a bill with a description and total amount.
+Select participants.
+Set a payment recipient.
+View bill details and payment obligations.
+3. Bill Splitting
+Split bills equally.
+Set custom amounts for participants.
+Validate that individual shares equal the total bill.
+Display outstanding amounts.
+4. Stellar Payment Integration
+Connect non-custodial Stellar wallets.
+Pay individual shares using simulated USDC.
+Verify transactions on Stellar Testnet.
+Link payments to participants and bills.
+5. Shared Payment Tracking
+Automatically update payment status.
+Display paid and unpaid participants.
+Track outstanding balances.
+Mark bills as settled when all shares are paid.
+Reject duplicate settlement records.
+Key Screens for Design
+User dashboard
+Group dashboard
+Create shared bill
+Add participants
+Split bill
+Bill details
+Wallet payment
+Payment progress
+Transaction history
+Technical Requirements
+Responsive web application for group and expense management.
+Equal and custom bill-splitting logic.
+Non-custodial Stellar wallet integration.
+Stellar Testnet payment verification.
+Reliable mapping of transactions to bills and participants.
+Definition of Done
+The MVP is complete when:
+Users can register and create expense groups.
+Users can invite participants.
+A user can create a shared bill.
+Bills can be split equally.
+Bills can be split using custom amounts.
+The platform validates that shares match the total bill.
+Participants can view their payment obligations.
+Participants can pay using simulated USDC.
+Payments are verified on Stellar Testnet.
+Individual payment statuses update correctly.
+Outstanding balances are calculated accurately.
+Fully paid bills are marked as settled.
+Duplicate settlement records are rejected.
+The repository, demo video, and verifiable transaction hashes are submitted.
+

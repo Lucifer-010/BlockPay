@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Raba Pay — Split a bill. Pay your share.</title>
+    <meta name="description" content="Share a cost with friends or housemates, see who has paid, and settle up in simulated USDC on a test network." />
+    <meta property="og:title" content="Raba Pay — Split a bill. Pay your share." />
+    <meta property="og:description" content="Share a cost with friends or housemates, see who has paid, and settle up in simulated USDC on a test network." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        var origDefineProperty = Object.defineProperty;
+        Object.defineProperty = function (target, prop, descriptor) {
+          if (target === window && prop === 'ethereum') {
+            try {
+              var existing = Object.getOwnPropertyDescriptor(window, 'ethereum');
+              if (existing && existing.configurable === false) {
+                return target;
+              }
+              if (descriptor && typeof descriptor === 'object') {
+                return origDefineProperty.call(
+                  Object,
+                  target,
+                  prop,
+                  Object.assign({}, descriptor, { configurable: true })
+                );
+              }
+            } catch (_err) {
+              return target;
+            }
+          }
+          return origDefineProperty.call(Object, target, prop, descriptor);
+        };
+        window.addEventListener(
+          'error',
+          function (event) {
+            var isExtension =
+              typeof event.filename === 'string' &&
+              event.filename.indexOf('chrome-extension://') === 0;
+            var isEthereumRedefine =
+              typeof event.message === 'string' &&
+              event.message.indexOf('Cannot redefine property: ethereum') !== -1;
+            if (isExtension || isEthereumRedefine) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+            }
+          },
+          true
+        );
+      })();
+    </script>
+  </head>
+  <body class="bg-[#F7FDF9] text-[#1C1917] antialiased selection:bg-[#DCFCE7] selection:text-[#14532D]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
